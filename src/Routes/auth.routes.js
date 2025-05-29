@@ -1,60 +1,56 @@
 const express=require("express");
-const userModal = require("../Models/user.modal");
+const userModal =require("../Models/user.modal.js")
 const logger = require("../config/logger");
 const verifyGoogleToken = require("../config/googleAuth");
-
-const router=express.Router();
+const jwt=require("jsonwebtoken");
+const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const router=express.Router();
 
 
-router.post('/signup', async (req, res) => {
-    const { name, email, password } = req.body;
-    try {
-      let user = await userModal.findOne({ email });
-      if (user) return res.status(400).json({ error: 'User already exists' });
-  
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user = await userModal.create({ name, email, password: hashedPassword });
-  
-      const token = createToken(user._id);
-      sendToken(res, token, user);
-    } catch (err) {
-      res.status(500).json({ error: 'Signup failed' });
-    }
-  });
+
 
 // google auth
 router.post('/google', async (req, res) => {
-  const { token } = req.body;
+  const resToken  = req.body.token;
+  // console.log("token : ",resToken);
 
   try {
-    // const ticket = await client.verifyIdToken({
-    //   idToken: token,
-    //   audience: process.env.GOOGLE_CLIENT_ID,
-    // });
+    const ticket = await client.verifyIdToken({
+      idToken: resToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    // console.log("Expected audience:", process.env.GOOGLE_CLIENT_ID);
+// console.log("ticket: ",ticket);
+    const payload = ticket.getPayload();
+    // console.log("Payload:", payload);
+    // const payload=await verifyGoogleToken(resToken);
+    // const { sub, email, name, picture } = payload;
 
-    // const payload = ticket.getPayload();
-    const payload=await verifyGoogleToken(token);
-    const { sub, email, name, picture } = payload;
-
-    let user = await userModal.findOne({ googleId: sub });
+    let user = await userModal.findOne({ googleId: payload.sub });
 
     if (!user) {
       user = await userModal.create({
-        name,
-        email,
-        googleId: sub,
-         picture,
+        firstName:payload.given_name,
+        lastName:payload.family_name,
+        email:payload.email,
+        googleId: payload.sub,
+         picture : payload.picture,
       });
     }
+    
 
-    const token = createToken(user._id);
-    sendToken(res, token, user);
+    // const token =await createToken(user._id);
+    // console.log("token :",token._id);
+    const token=jwt.sign({id:user._id}, process.env.JWT_SECRET, { expiresIn: "7d" });
+    res.cookie("token", token, { httpOnly: true, secure: false }); // set secure: true in production
+    res.status(200).json({ user: { name: user.name, email: user.email } });
+    // sendToken(res, token, user);
     logger.info("google auth successfull");
   } catch (err) {
-    console.log("error:",err.message);
-    logger.error(err);
+    // console.log("error:",err.message);
+    logger.error(err.message);
     res.status(401).json({ message: 'Invalid Google token' });
   }
 });

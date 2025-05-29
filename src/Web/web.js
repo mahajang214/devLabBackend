@@ -74,9 +74,12 @@ const cookieParser = require("cookie-parser");
 const fs = require("fs");
 const path = require("path");
 const logger = require("../config/logger"); // Make sure this path is correct
+const connectDB = require("../Database/connectDB");
 // const logsRepo=require("../logs");
+const authRoutes=require("../Routes/auth.routes");
 
 const web = express();
+connectDB();
 
 // Middleware order matters:
 // 1. Parse cookies
@@ -117,6 +120,7 @@ if (!fs.existsSync(logDir)) {
 }
 
 // Routes
+web.use("/auth",authRoutes);
 // web.get("/", (req, res) => {
 //   logger.info("Hello route was called");
 //   res.send("Hello World");
