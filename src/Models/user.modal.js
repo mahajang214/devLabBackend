@@ -12,6 +12,25 @@ const userSchema = new mongoose.Schema({
   googleId: String,
   email: { type: String, required: true, unique: true },
   picture: String,
+  followers:[
+    {
+      name:String,  // combination of first + last 
+      id:String
+    },
+  ],
+  following:[
+    {
+      name:String,
+      id:String
+    },
+  ],
+  projects:[
+    {
+      projectID:String,
+      projectName:String,
+      ownerName:String
+    }
+  ]
 });
 
 const userModal=mongoose.model("User",userSchema);
