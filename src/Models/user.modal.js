@@ -9,8 +9,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  googleId: String,
-  email: { type: String, required: true, unique: true },
+  googleId: {
+    type:String,
+    select: false,
+  },
+  email: { type: String, required: true, unique: true, select:false },
   picture: String,
   followers:[
     {

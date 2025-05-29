@@ -77,6 +77,7 @@ const logger = require("../config/logger"); // Make sure this path is correct
 const connectDB = require("../Database/connectDB");
 // const logsRepo=require("../logs");
 const authRoutes=require("../Routes/auth.routes");
+const main=require("../Routes/main.routes");
 
 const web = express();
 connectDB();
@@ -121,6 +122,7 @@ if (!fs.existsSync(logDir)) {
 
 // Routes
 web.use("/auth",authRoutes);
+web.use("/main",main);
 // web.get("/", (req, res) => {
 //   logger.info("Hello route was called");
 //   res.send("Hello World");

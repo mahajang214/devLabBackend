@@ -14,7 +14,7 @@ const router = express.Router();
 // google auth
 router.post("/google", async (req, res) => {
   const resToken = req.body.token;
-  // console.log("token : ",resToken);
+  console.log("token : ", resToken);
 
   try {
     const ticket = await client.verifyIdToken({
@@ -56,94 +56,26 @@ router.post("/google", async (req, res) => {
   }
 });
 
-// create new project
-router.post("/create", protected, async (req, res) => {
+// logout 
+router.post("/logout", protected, async (req, res) => {
   try {
-    const { projectName, collabs, folder, folderName } = req.body;
-    const userID = req.user.id;
-
-    logger.info(`Creating new project: ${projectName} by user: ${userID}`);
-    logger.info(`Collaborators: ${JSON.stringify(collabs)}`);
-    logger.info(`Initial folder structure: ${JSON.stringify(folder)}`);
-
-    const owner = await userModal.findById(userID);
-
-    // Create new project
-    const newProject = await projectModal.create({
-      projectName,
-      ownerName: `${owner.firstName} ${owner.lastName}`,
-      ownerID: userID,
-      collabs: collabs || [],
-      folder: folder || [],
-      folderName,
-    });
-
-    // Update user's projects array
-    await userModal.findByIdAndUpdate(userID, {
-      $push: {
-        projects: {
-          projectID: newProject._id,
-          projectName: projectName,
-          ownerName: `${owner.firstName} ${owner.lastName}`,
-        },
-      },
-    });
-
-    logger.info(`Project created successfully with ID: ${newProject._id}`);
-    res.status(201).json({
-      message: "Project created successfully",
-      project: newProject,
-    });
+    // Clear the JWT token from client-side storage
+    // Note: The actual token clearing should be handled on the client side
+    // This endpoint just confirms the logout was successful
+    
+    logger.info(`User ${req.user.id} logged out successfully`);
+    return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    logger.error(`Error creating project: ${error.message}`);
-    res.status(500).json({
-      message: "Failed to create project",
-      error: error.message,
+    logger.error(`Error during logout: ${error.message}`);
+    return res.status(500).json({
+      message: "Failed to logout",
+      error: error.message
     });
   }
 });
 
-// create new file
-router.post("/file", protected, async (req, res) => {
-  try {
-    const { fileName, content, language, projectID } = req.body;
-    const userID = req.user.id;
 
-    logger.info(
-      `Creating new file: ${fileName} in project: ${projectID} by user: ${userID}`
-    );
 
-    const newFile = await fileModal.create({
-      fileName,
-      content,
-      language,
-      ownerID: userID,
-      projectID,
-    });
-
-    // Update project's folder array with new file
-    await projectModal.findByIdAndUpdate(projectID, {
-      $push: {
-        folder: {
-          fileID: newFile._id,
-          fileName: fileName,
-        },
-      },
-    });
-
-    logger.info(`File created successfully with ID: ${newFile._id}`);
-    res.status(201).json({
-      message: "File created successfully",
-      file: newFile,
-    });
-  } catch (error) {
-    logger.error(`Error creating file: ${error.message}`);
-    res.status(500).json({
-      message: "Failed to create file",
-      error: error.message,
-    });
-  }
-});
 
 // check protected route
 // router.get("/protected", protected, async (req, res) => {
