@@ -46,7 +46,7 @@ router.post("/google", async (req, res) => {
       expiresIn: "7d",
     });
     res.cookie("token", token, { httpOnly: true, secure: false }); // set secure: true in production
-    res.status(200).json({ user: { name: user.name, email: user.email } });
+    res.status(200).json({ user,token });
     // sendToken(res, token, user);
     logger.info("google auth successfull");
   } catch (err) {

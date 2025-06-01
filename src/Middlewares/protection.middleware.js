@@ -2,7 +2,12 @@ const logger = require("../config/logger");
 const jwt=require("jsonwebtoken");
 const protected=async (req,res,next) => {
     try {
-        const token = req.cookies.token;
+        const token =
+        req.cookies?.token ||
+        (req.headers.authorization?.startsWith("Bearer ")
+          ? req.headers.authorization.split(" ")[1]
+          : null);
+      
         console.log("token:",token);
         if (!token) {
             logger.warn('Authentication attempt failed: No token provided');

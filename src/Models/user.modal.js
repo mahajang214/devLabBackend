@@ -18,13 +18,15 @@ const userSchema = new mongoose.Schema({
   followers:[
     {
       name:String,  // combination of first + last 
-      id:String
+      id:String,
+      picture:String
     },
   ],
   following:[
     {
       name:String,
-      id:String
+      id:String,
+      picture:String
     },
   ],
   projects:[

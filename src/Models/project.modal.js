@@ -19,6 +19,7 @@ const projectSchema = new mongoose.Schema(
       },
     ],
     folderName: String,
+    description:String
   },
   { timestamps: true }
 );

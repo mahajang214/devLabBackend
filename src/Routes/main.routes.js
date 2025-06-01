@@ -11,12 +11,12 @@ const router = express.Router();
 // create new project
 router.post("/create", protected, async (req, res) => {
   try {
-    const { projectName, collabs, folder, folderName } = req.body;
+    const { projectName, collabs, folder, folderName, description } = req.body;
     const userID = req.user.id;
 
     logger.info(`Creating new project: ${projectName} by user: ${userID}`);
     logger.info(`Collaborators: ${JSON.stringify(collabs)}`);
-    logger.info(`Initial folder structure: ${JSON.stringify(folder)}`);
+    logger.info(`Initial folder structure: ${JSON.stringify(folderName)}`);
 
     const owner = await userModal.findById(userID);
 
@@ -28,6 +28,7 @@ router.post("/create", protected, async (req, res) => {
       collabs: collabs || [],
       folder: folder || [],
       folderName,
+      description,
     });
 
     // Update user's projects array
@@ -50,6 +51,90 @@ router.post("/create", protected, async (req, res) => {
     logger.error(`Error creating project: ${error.message}`);
     res.status(500).json({
       message: "Failed to create project",
+      error: error.message,
+    });
+  }
+});
+
+// only owner delete project
+router.delete("/delete/:projectId", protected, async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    const userID = req.user.id;
+
+    logger.info(
+      `Attempting to delete project: ${projectId} by user: ${userID}`
+    );
+
+    // Find the project and check ownership
+    const project = await projectModal.findById(projectId);
+    if (!project) {
+      logger.error(`Project not found with ID: ${projectId}`);
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    // Verify project ownership
+    if (project.ownerID !== userID) {
+      logger.error(
+        `Unauthorized deletion attempt - User ${userID} is not the owner of project ${projectId}`
+      );
+      return res.status(403).json({
+        message: "Only project owner can delete the project",
+      });
+    }
+
+    // Delete the project
+    await projectModal.findByIdAndDelete(projectId);
+
+    // Remove project reference from user's projects array
+    await userModal.findByIdAndUpdate(userID, {
+      $pull: {
+        projects: { projectID: projectId },
+      },
+    });
+
+    logger.info(`Project ${projectId} deleted successfully by user ${userID}`);
+    res.status(200).json({
+      message: "Project deleted successfully",
+    });
+  } catch (error) {
+    logger.error(`Error deleting project: ${error.message}`);
+    res.status(500).json({
+      message: "Failed to delete project",
+      error: error.message,
+    });
+  }
+});
+
+// get followings
+router.get("/followings", protected, async (req, res) => {
+  try {
+    const userID = req.user.id;
+    logger.info(`Fetching followings for user: ${userID}`);
+
+    const user = await userModal.findById(userID);
+    if (!user) {
+      logger.error(`User not found with ID: ${userID}`);
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const followings = await user.following;
+
+    logger.info(
+      `Successfully fetched ${followings.length} followings for user: ${userID}`
+    );
+    res.status(200).json({
+      message: "Followings fetched successfully",
+      data: followings,
+    });
+  } catch (error) {
+    logger.error(`Error fetching followings: ${error.message}`);
+    res.status(500).json({
+      message: "Failed to fetch followings",
       error: error.message,
     });
   }
@@ -97,13 +182,13 @@ router.post("/create_file", protected, async (req, res) => {
   }
 });
 
-// list all projects for that user
+// list projects for that user
 router.get("/projects", protected, async (req, res) => {
   try {
     const userID = req.user.id;
     const user = await userModal.findById(userID);
 
-    console.log("projects", user.projects);
+    // console.log("projects", user.projects);
 
     logger.info(
       `Retrieved projects for user ${userID}: ${JSON.stringify(user.projects)}`
@@ -113,6 +198,33 @@ router.get("/projects", protected, async (req, res) => {
     logger.error(`Error listing projects: ${error.message}`);
     res.status(500).json({
       message: "Failed to list projects",
+      error: error.message,
+    });
+  }
+});
+
+// when one of projects is clicked then info of that project
+router.get("/projects/one", protected, async (req, res) => {
+  try {
+    // const { projectID } = req.params;
+    const ownerID = req.user.id;
+    logger.info(`Fetching project details for ID: ${ownerID}`);
+    const project = await projectModal.findOne({ ownerID: ownerID });
+    console.log("project:", project);
+    if (!project) {
+      logger.warn(`Project not found with ID: ${ownerID}`);
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    logger.info(`Retrieved project details for ID: ${ownerID}`);
+    res.status(200).json({
+      message: "Project details retrieved successfully",
+      data: project,
+    });
+  } catch (error) {
+    logger.error(`Error retrieving project details: ${error.message}`);
+    res.status(500).json({
+      message: "Failed to retrieve project details",
       error: error.message,
     });
   }
@@ -243,12 +355,14 @@ router.put("/follow/:followingID", protected, async (req, res) => {
     user.following.push({
       name: `${followingUser.firstName} ${followingUser.lastName}`,
       id: followingID,
+      picture: followingUser.picture,
     });
     await user.save();
 
     followingUser.followers.push({
       name: `${user.firstName} ${user.lastName}`,
-      id: user.id,
+      id: userID,
+      picture: user.picture,
     });
     await followingUser.save();
 
@@ -304,56 +418,113 @@ router.put("/unfollow/:unfollowingID", protected, async (req, res) => {
   }
 });
 
-// search user by first name or last name
-router.get("/search/:searchName",protected,async (req,res) => {
-    try {
-        const searchName=req.params.searchName;
-        const findUser = await userModal.find({
-            $or: [
-                { firstName: { $regex: searchName, $options: 'i' } },
-                { lastName: { $regex: searchName, $options: 'i' } }
-            ]
-        });
-        if (findUser.length === 0) {
-            logger.warn(`No users found matching search term: ${searchName}`);
-            return res.status(404).json({ message: "No users found" });
-        }
+// get all codes
+router.get("/coders", protected, async (req, res) => {
+  try {
+    const userID = req.user.id;
+    const user = await userModal.findById(userID);
+    const coders = await userModal.find({ _id: { $ne: userID } });
+    logger.info(`Successfully fetched ${coders.length} coders`);
 
-        logger.info(`Found ${findUser.length} users matching search term: ${searchName}`);
-        return res.status(200).json({ users: findUser });
-    } catch (error) {
-        logger.error(`Error searching users: ${error.message}`);
-        return res.status(500).json({
-            message: "Failed to search users",
-            error: error.message
-        });
+    res.status(200).json({ data: coders });
+  } catch (error) {
+    logger.error(`Error fetching coders: ${error.message}`);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch coders", error: error.message });
+  }
+});
+
+// get me
+router.get("/me", protected, async (req, res) => {
+  try {
+    const userID = req.user.id;
+    const user = await userModal.findById(userID);
+    res.status(200).json({ data: user });
+  } catch (error) {
+    logger.error(`Error fetching user: ${error.message}`);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch user", error: error.message });
+  }
+});
+
+// search user by first name or last name
+router.get("/search/:searchName", protected, async (req, res) => {
+  try {
+    const searchName = req.params.searchName;
+    const findUser = await userModal.find({
+      $or: [
+        { firstName: { $regex: searchName, $options: "i" } },
+        { lastName: { $regex: searchName, $options: "i" } },
+      ],
+    });
+    if (findUser.length === 0) {
+      logger.warn(`No users found matching search term: ${searchName}`);
+      return res.status(404).json({ message: "No users found" });
     }
+
+    logger.info(
+      `Found ${findUser.length} users matching search term: ${searchName}`
+    );
+    return res.status(200).json({ users: findUser });
+  } catch (error) {
+    logger.error(`Error searching users: ${error.message}`);
+    return res.status(500).json({
+      message: "Failed to search users",
+      error: error.message,
+    });
+  }
 });
 
 // search by project name
 router.get("/search/project/:projectName", protected, async (req, res) => {
-    try {
-        const projectName = req.params.projectName;
-        const findProject = await projectModal.find({
-            projectName: { $regex: projectName, $options: 'i' }
-        });
+  try {
+    const projectName = req.params.projectName;
+    const findProject = await projectModal.find({
+      projectName: { $regex: projectName, $options: "i" },
+    });
 
-        if (findProject.length === 0) {
-            logger.warn(`No projects found matching search term: ${projectName}`);
-            return res.status(404).json({ message: "No projects found" });
-        }
-
-        logger.info(`Found ${findProject.length} projects matching search term: ${projectName}`);
-        return res.status(200).json({ projects: findProject });
-    } catch (error) {
-        logger.error(`Error searching projects: ${error.message}`);
-        return res.status(500).json({
-            message: "Failed to search projects",
-            error: error.message
-        });
+    if (findProject.length === 0) {
+      logger.warn(`No projects found matching search term: ${projectName}`);
+      return res.status(404).json({ message: "No projects found" });
     }
+
+    logger.info(
+      `Found ${findProject.length} projects matching search term: ${projectName}`
+    );
+    return res.status(200).json({ data: findProject });
+  } catch (error) {
+    logger.error(`Error searching projects: ${error.message}`);
+    return res.status(500).json({
+      message: "Failed to search projects",
+      error: error.message,
+    });
+  }
+});
+
+// list all projects till now
+router.get("/projects/all", protected, async (req, res) => {
+  try {
+    // const userID=req.user.id;
+    const projects = await projectModal.find();
+
+    logger.info(`All projects founded`);
+    return res.status(200).json({ data: projects });
+  } catch (error) {
+    logger.error(`Error searching projects: ${error.message}`);
+    return res.status(500).json({
+      message: "Failed to found all projects",
+      error: error.message,
+    });
+  }
 });
 
 // update file
+
+// only owner can delete project
+
+// create a chatting for only collaborators can chat
+// global chat room for collaborators
 
 module.exports = router;
