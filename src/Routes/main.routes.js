@@ -108,7 +108,7 @@ router.delete("/delete/:projectId", protected, async (req, res) => {
   }
 });
 
-// get followings
+// get user followings
 router.get("/followings", protected, async (req, res) => {
   try {
     const userID = req.user.id;
@@ -139,6 +139,40 @@ router.get("/followings", protected, async (req, res) => {
     });
   }
 });
+
+// get user followers
+router.get("/followers", protected, async (req, res) => {
+  try {
+    const userID = req.user.id;
+    logger.info(`Fetching followers for user: ${userID}`);
+
+    const user = await userModal.findById(userID);
+    if (!user) {
+      logger.error(`User not found with ID: ${userID}`);
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const followers = await user.followers;
+
+    logger.info(
+      `Successfully fetched ${followers.length} followers for user: ${userID}`
+    );
+    res.status(200).json({
+      message: "Followers fetched successfully",
+      data: followers,
+    });
+  } catch (error) {
+    logger.error(`Error fetching followers: ${error.message}`);
+    res.status(500).json({
+      message: "Failed to fetch followers",
+      error: error.message,
+    });
+  }
+});
+
+
 
 // create new file
 router.post("/create_file", protected, async (req, res) => {
