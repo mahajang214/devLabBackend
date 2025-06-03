@@ -172,8 +172,6 @@ router.get("/followers", protected, async (req, res) => {
   }
 });
 
-
-
 // create new file
 router.post("/create_file", protected, async (req, res) => {
   try {
@@ -554,11 +552,28 @@ router.get("/projects/all", protected, async (req, res) => {
   }
 });
 
+// if user is found in any collab then show them that project to work
+router.get("/collabedWith", protected, async (req, res) => {
+  try {
+    const userID = req.user.id;
+    // Find projects where collabs array contains an object with id === userID
+    const collabedWith = await projectModal.find({
+      "collabs.id": userID,
+    });
+
+    logger.info(`Found ${collabedWith.length} projects where user ${userID} is a collaborator.`);
+    return res.status(200).json({ data: collabedWith });
+  } catch (error) {
+    logger.error(`Error fetching collabed projects: ${error.message}`);
+    return res.status(500).json({
+      message: "Failed to fetch collabed projects",
+      error: error.message,
+    });
+  }
+})
+
 // update file
 
 // only owner can delete project
-
-// create a chatting for only collaborators can chat
-// global chat room for collaborators
 
 module.exports = router;

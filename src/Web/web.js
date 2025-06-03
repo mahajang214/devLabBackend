@@ -10,11 +10,13 @@ const fs = require("fs");
 const path = require("path");
 const logger = require("../config/logger"); // Make sure this path is correct
 const connectDB = require("../Database/connectDB");
+const { exec } = require("child_process");
 // const logsRepo=require("../logs");
-const authRoutes=require("../Routes/auth.routes");
-const mainRoutes=require("../Routes/main.routes");
-const chatRoutes=require("../Routes/chat.routes");
-const aiRoutes=require("../Routes/ai.routes");
+const authRoutes = require("../Routes/auth.routes");
+const mainRoutes = require("../Routes/main.routes");
+const chatRoutes = require("../Routes/chat.routes");
+const aiRoutes = require("../Routes/ai.routes");
+const codeRoutes = require("../Routes/code.routes");
 
 const web = express();
 connectDB();
@@ -61,10 +63,11 @@ if (!fs.existsSync(logDir)) {
 }
 
 // Routes
-web.use("/auth",authRoutes);
-web.use("/main",mainRoutes);
-web.use("/chat",chatRoutes);
-web.use("/ai",aiRoutes);
+web.use("/auth", authRoutes);
+web.use("/main", mainRoutes);
+web.use("/chat", chatRoutes);
+web.use("/code", codeRoutes);
+// web.use("/ai",aiRoutes);
 // web.get("/", (req, res) => {
 //   logger.info("Hello route was called");
 //   res.send("Hello World");

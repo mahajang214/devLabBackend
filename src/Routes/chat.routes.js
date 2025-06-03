@@ -9,8 +9,7 @@ router.get("/messages", protected, async (req, res) => {
     const { from, to } = req.query;
     const messages = await messageModal.find({
       $or: [
-        { from, to },
-        { from: to, to: from },
+        { to },
       ],
     }).sort({ createdAt: 1 });
 
