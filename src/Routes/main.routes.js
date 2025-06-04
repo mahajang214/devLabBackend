@@ -172,47 +172,7 @@ router.get("/followers", protected, async (req, res) => {
   }
 });
 
-// create new file
-router.post("/create_file", protected, async (req, res) => {
-  try {
-    const { fileName, content, language, projectID } = req.body;
-    const userID = req.user.id;
 
-    logger.info(
-      `Creating new file: ${fileName} in project: ${projectID} by user: ${userID}`
-    );
-
-    const newFile = await fileModal.create({
-      fileName,
-      content,
-      language,
-      ownerID: userID,
-      projectID,
-    });
-
-    // Update project's folder array with new file
-    await projectModal.findByIdAndUpdate(projectID, {
-      $push: {
-        folder: {
-          fileID: newFile._id,
-          fileName: fileName,
-        },
-      },
-    });
-
-    logger.info(`File created successfully with ID: ${newFile._id}`);
-    res.status(201).json({
-      message: "File created successfully",
-      file: newFile,
-    });
-  } catch (error) {
-    logger.error(`Error creating file: ${error.message}`);
-    res.status(500).json({
-      message: "Failed to create file",
-      error: error.message,
-    });
-  }
-});
 
 // list projects for that user
 router.get("/projects", protected, async (req, res) => {
