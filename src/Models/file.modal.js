@@ -25,6 +25,7 @@ const fileSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+     folderID: { type: mongoose.Schema.Types.ObjectId, ref: "Folder", default: null },
   },
   { timestamps: true }
 );

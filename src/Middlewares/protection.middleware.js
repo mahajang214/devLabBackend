@@ -5,7 +5,7 @@ const protected = async (req, res, next) => {
 
         // Debug logs
         // console.log("Cookies:", req.cookies);
-        // console.log("Authorization Header:", req.headers.authorization);
+        // console.log("Authorization Header:", req.headers);
 
         const token =
             req.cookies?.token ||

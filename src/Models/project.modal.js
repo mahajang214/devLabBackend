@@ -12,13 +12,6 @@ const projectSchema = new mongoose.Schema(
     },
     ownerID: String,
     collabs: [{ name: String, id: String }],
-    folder: [
-      {
-        fileID: String,
-        fileName: String,
-      },
-    ],
-    folderName: String,
     description:String
   },
   { timestamps: true }

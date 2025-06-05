@@ -11,12 +11,12 @@ const router = express.Router();
 // create new project
 router.post("/create", protected, async (req, res) => {
   try {
-    const { projectName, collabs, folder, folderName, description } = req.body;
+    const { projectName, collabs, description } = req.body;
     const userID = req.user.id;
 
     logger.info(`Creating new project: ${projectName} by user: ${userID}`);
     logger.info(`Collaborators: ${JSON.stringify(collabs)}`);
-    logger.info(`Initial folder structure: ${JSON.stringify(folderName)}`);
+    // logger.info(`Initial folder structure: ${JSON.stringify(folderName)}`);
 
     const owner = await userModal.findById(userID);
 
@@ -26,8 +26,6 @@ router.post("/create", protected, async (req, res) => {
       ownerName: `${owner.firstName} ${owner.lastName}`,
       ownerID: userID,
       collabs: collabs || [],
-      folder: folder || [],
-      folderName,
       description,
     });
 
