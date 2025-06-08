@@ -1,13 +1,13 @@
+
+require("dotenv").config();
 const logger = require("./src/config/logger");
-const web = require("./src/Web/web");
-const express = require('express');
+const server = require("./src/Web/web");
 
 
 
 
 
 
-
-web.listen(3001,()=>{
+server.listen(process.env.PORT,()=>{
 logger.info("Server is running on port 3001");
 })

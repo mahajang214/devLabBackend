@@ -168,10 +168,10 @@ router.post('/create_folder', protected, async (req, res) => {
 // Helper recursive function to delete folder contents
 async function deleteFolderAndContents(folderId) {
     // Delete all files in this folder
-    await File.deleteMany({ folderID: folderId });
+    await fileModal.deleteMany({ folderID: folderId });
 
     // Find subfolders
-    const subfolders = await Folder.find({ parentFolderID: folderId });
+    const subfolders = await folderModel.find({ parentFolderID: folderId });
 
     // Recursively delete subfolders
     for (const subfolder of subfolders) {
@@ -179,26 +179,27 @@ async function deleteFolderAndContents(folderId) {
     }
 
     // Delete this folder
-    await Folder.deleteOne({ _id: folderId });
+    await folderModel.deleteOne({ _id: folderId });
 }
 
 // Delete folder route
-router.delete('/folders/:folderId', async (req, res) => {
+router.delete('/delete_folders/:id', async (req, res) => {
     try {
-        const { folderId } = req.params;
+        const folderId = req.params.id;
+        if (!folderId) {
+            return res.status(400).json({ error: 'Folder ID is required' });
+        }
 
         const folder = await folderModel.findById(folderId);
         if (!folder) return res.status(404).json({ error: 'Folder not found' });
 
         await deleteFolderAndContents(folderId);
 
-        res.json({ message: 'Folder and all its contents deleted successfully' });
+        res.json({ message: 'Folder and all its contents deleted successfully', data: folder });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
-
-
 
 
 
@@ -331,5 +332,106 @@ router.post("/update_code", protected, async (req, res) => {
         });
     }
 });
+
+// rename files
+router.put("/rename_file", protected, async (req, res) => {
+    try {
+        const { fileID, newFileName } = req.body;
+        const userID = req.user.id;
+
+        logger.info(`Renaming file: ${fileID} to ${newFileName} by user: ${userID}`);
+
+        const updatedFile = await fileModal.findOneAndUpdate(
+            { _id: fileID },
+            { fileName: newFileName },
+            { new: true }
+        );
+
+        if (!updatedFile) {
+            logger.warn(`File not found or unauthorized access: ${fileID}`);
+            return res.status(404).json({
+                message: "File not found or unauthorized access",
+            });
+        }
+
+        logger.info(`File renamed successfully: ${fileID}`);
+        res.status(200).json({
+            message: "File renamed successfully",
+            data: updatedFile,
+        });
+    } catch (error) {
+        logger.error(`Error renaming file: ${error.message}`);
+        res.status(500).json({
+            message: "Failed to rename file",
+            error: error.message,
+        });
+    }
+});
+
+// rename folders
+router.put("/rename_folder", protected, async (req, res) => {
+    try {
+        const { folderID, newFolderName } = req.body;
+        const userID = req.user.id;
+
+        logger.info(`Renaming folder: ${folderID} to ${newFolderName} by user: ${userID}`);
+
+        const updatedFolder = await folderModel.findOneAndUpdate(
+            { _id: folderID },
+            { folderName: newFolderName },
+            { new: true }
+        );
+
+        if (!updatedFolder) {
+            logger.warn(`Folder not found or unauthorized access: ${folderID}`);
+            return res.status(404).json({
+                message: "Folder not found or unauthorized access",
+            });
+        }
+
+        logger.info(`Folder renamed successfully: ${folderID}`);
+        res.status(200).json({
+            message: "Folder renamed successfully",
+            data: updatedFolder,
+        });
+    } catch (error) {
+        logger.error(`Error renaming folder: ${error.message}`);
+        res.status(500).json({
+            message: "Failed to rename folder",
+            error: error.message,
+        });
+    }
+});
+// delete files
+router.delete("/delete_file/:id", protected, async (req, res) => {
+    try {
+        const fileID = req.params.id;
+        const userID = req.user.id;
+
+        logger.info(`Deleting file: ${fileID} by user: ${userID}`);
+
+        const deletedFile = await fileModal.findOneAndDelete({ _id: fileID });
+
+        if (!deletedFile) {
+            logger.warn(`File not found or unauthorized access: ${fileID}`);
+            return res.status(404).json({
+                message: "File not found or unauthorized access",
+            });
+        }
+
+        logger.info(`File deleted successfully: ${fileID}`);
+        res.status(200).json({
+            message: "File deleted successfully",
+            data: deletedFile,
+        });
+    } catch (error) {
+        logger.error(`Error deleting file: ${error.message}`);
+        res.status(500).json({
+            message: "Failed to delete file",
+            error: error.message,
+        });
+    }
+});
+
 
 module.exports = router;

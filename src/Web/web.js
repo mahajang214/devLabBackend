@@ -17,10 +17,92 @@ const mainRoutes = require("../Routes/main.routes");
 const chatRoutes = require("../Routes/chat.routes");
 const aiRoutes = require("../Routes/ai.routes");
 const codeRoutes = require("../Routes/code.routes");
+const http = require('http');
+const { Server } = require('socket.io');
 
 const web = express();
 connectDB();
 
+
+// socket connection
+const server = http.createServer(web);
+
+const io = new Server(server, {
+  cors: {
+    origin: true, // allow frontend to connect (change '*' to specific domain in prod)
+    methods: ['GET', 'POST',
+      'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    // credentials: true, // allow cookies to be sent
+    
+  },
+});
+
+io.on('connection', (socket) => {
+  console.log(`Socket connected: ${socket.id}`);
+  socket.on('connect', () => {
+    console.log(`Client connected: ${socket.id}`);
+  });
+
+  // chatting
+  socket.on('message', (msg) => {
+    console.log('Received:', msg);
+    io.emit('message', msg); // broadcast to all
+  });
+
+
+  // online 
+  socket.on("online-users", (data) => {
+    console.log(data);
+    io.emit("online-users", data); // broadcast to all
+  });
+
+  // Join a private room
+  socket.on("join-room", (roomid) => {
+    console.log(`Private Room  ID:${roomid}`);
+     console.log("Socket ID:", socket.id);
+     if (!roomid) return console.warn("Room ID missing!");
+    socket.join(roomid);
+  });
+
+  // Receive message and emit only to that room
+  socket.on("code-change", ({ roomid, code,fileName }) => {
+    // console.log('Code changed data:', data);
+    // console.log(`Code change in room : ${roomid}:`);
+
+    // io.to(roomid).emit('code-change', data);
+    if (!roomid) return console.warn("Room ID missing!");
+
+    if(!fileName) {
+      console.warn(" fileName is missing!");
+      return;
+    }
+    
+
+    //  io.emit('code-change', data);  
+    io.to(roomid).emit('code-change', {  code,fileName });
+  });
+
+  // console.log("Socket rooms:", socket.rooms);
+  
+
+  // multi cursors
+  socket.on("cursor-move", ({ roomid, cursorPosition,fileName,username }) => {
+    // console.log('Cursor move data:', data);
+    // console.log(`Cursor move in room : ${data.roomid}:`);
+    if (!roomid) return console.warn("\nRoom ID missing!\n");
+    // console.log("filename:", fileName);
+
+    io.to(roomid).emit('cursor-move', {cursorPosition,fileName,username});
+  });
+
+
+  
+
+
+  socket.on('disconnect', () => {
+    console.log(`Disconnected: ${socket.id}`);
+  });
+});
 
 
 // Middleware order matters:
@@ -67,7 +149,7 @@ web.use("/auth", authRoutes);
 web.use("/main", mainRoutes);
 web.use("/chat", chatRoutes);
 web.use("/code", codeRoutes);
-// web.use("/ai",aiRoutes);
+
 // web.get("/", (req, res) => {
 //   logger.info("Hello route was called");
 //   res.send("Hello World");
@@ -78,4 +160,4 @@ web.use("/code", codeRoutes);
 //   res.status(500).send("Error route");
 // });
 
-module.exports = web;
+module.exports = server;

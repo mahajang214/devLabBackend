@@ -54,6 +54,54 @@ router.post("/create", protected, async (req, res) => {
   }
 });
 
+// add collabs
+router.put("/add/collabs", protected, async (req, res) => {
+  // collabs: [{ name: String, id: String }]
+  try {
+    const { fileID, collabs } = req.body;
+    // console.log("fileID:", fileID);
+    // console.log("collabs:", collabs);
+
+    // Validate input
+    if (!fileID || !Array.isArray(collabs)) {
+      return res.status(400).json({ message: "fileID and collabs array are required" });
+    }
+
+    // Find the project
+    const project = await projectModal.findById(fileID);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Only owner can add collaborators
+    if (project.ownerID !== req.user.id) {
+      return res.status(403).json({ message: "Only project owner can add collaborators" });
+    }
+
+  const newCollabs = [];
+  for (const collab of collabs) {
+    const alreadyExists = project.collabs.some(existing => existing.id === collab.id);
+    if (alreadyExists) {
+      return res.status(403).json({ message: `Collaborator is already exists` });
+    }
+    newCollabs.push(collab);
+  }
+
+
+    // Add new collaborators
+    project.collabs.push(...newCollabs);
+    await project.save();
+
+    res.status(200).json({ message: "Collaborators added successfully", data: project });
+  } catch (error) {
+    logger.error(`Error adding collaborators: ${error.message}`);
+    res.status(500).json({
+      message: "Failed to add collaborators",
+      error: error.message,
+    });
+  }
+})
+
 // only owner delete project
 router.delete("/delete/:projectId", protected, async (req, res) => {
   try {
@@ -183,7 +231,7 @@ router.get("/projects", protected, async (req, res) => {
     logger.info(
       `Retrieved projects for user ${userID}: ${JSON.stringify(user.projects)}`
     );
-    res.status(200).json({ msg: "list all users", data: user.projects });
+    res.status(200).json({ msg: " successfully fetching user data", data: user.projects });
   } catch (error) {
     logger.error(`Error listing projects: ${error.message}`);
     res.status(500).json({
