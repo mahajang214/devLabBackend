@@ -29,7 +29,7 @@ const io = new Server(server, {
     methods: ['GET', 'POST',
       'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     // credentials: true, // allow cookies to be sent
-    
+
   },
 });
 
@@ -55,44 +55,44 @@ io.on('connection', (socket) => {
   // Join a private room
   socket.on("join-room", (roomid) => {
     console.log(`Private Room  ID:${roomid}`);
-     console.log("Socket ID:", socket.id);
-     if (!roomid) return console.warn("Room ID missing!");
+    console.log("Socket ID:", socket.id);
+    if (!roomid) return console.warn("Room ID missing!");
     socket.join(roomid);
   });
 
   // Receive message and emit only to that room
-  socket.on("code-change", ({ roomid, code,fileName }) => {
+  socket.on("code-change", ({ roomid, code, fileName }) => {
     // console.log('Code changed data:', data);
     // console.log(`Code change in room : ${roomid}:`);
 
     // io.to(roomid).emit('code-change', data);
     if (!roomid) return console.warn("Room ID missing!");
 
-    if(!fileName) {
+    if (!fileName) {
       console.warn(" fileName is missing!");
       return;
     }
-    
+
 
     //  io.emit('code-change', data);  
-    io.to(roomid).emit('code-change', {  code,fileName });
+    io.to(roomid).emit('code-change', { code, fileName });
   });
 
   // console.log("Socket rooms:", socket.rooms);
-  
+
 
   // multi cursors
-  socket.on("cursor-move", ({ roomid, cursorPosition,fileName,username }) => {
+  socket.on("cursor-move", ({ roomid, cursorPosition, fileName, username }) => {
     // console.log('Cursor move data:', data);
     // console.log(`Cursor move in room : ${data.roomid}:`);
     if (!roomid) return console.warn("\nRoom ID missing!\n");
     // console.log("filename:", fileName);
 
-    io.to(roomid).emit('cursor-move', {cursorPosition,fileName,username});
+    io.to(roomid).emit('cursor-move', { cursorPosition, fileName, username });
   });
 
 
-  
+
 
 
   socket.on('disconnect', () => {
@@ -114,13 +114,15 @@ web.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://mahajang214.github.io/' // add your GitHub Pages URL if used
+  'https://mahajang214.github.io/devLab',
+  'https://mahajang214.github.io'
+   // add your GitHub Pages URL if used
 ];
 
 web.use(
   cors({
     // origin: "https://mahajang214.github.io/", // change 'true' to specific origin for better security
-    origin: function(origin, callback) {
+    origin: function (origin, callback) {
       // allow requests with no origin (like Postman or curl)
       if (!origin) return callback(null, true);
 
