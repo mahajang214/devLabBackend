@@ -2,16 +2,12 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-// const xss = require("xss-clean");
-const mongoSanitize = require("express-mongo-sanitize");
-const helmet = require("helmet");
 const cookieParser = require('cookie-parser');
 const fs = require("fs");
 const path = require("path");
 const logger = require("../config/logger"); // Make sure this path is correct
 const connectDB = require("../Database/connectDB");
 const { exec } = require("child_process");
-// const logsRepo=require("../logs");
 const authRoutes = require("../Routes/auth.routes");
 const mainRoutes = require("../Routes/main.routes");
 const chatRoutes = require("../Routes/chat.routes");
@@ -115,9 +111,24 @@ web.use(express.json());
 web.use(express.urlencoded({ extended: true }));
 
 // 3. CORS - you can customize origin as needed
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://mahajang214.github.io/' // add your GitHub Pages URL if used
+];
+
 web.use(
   cors({
-    origin: "https://mahajang214.github.io/", // change 'true' to specific origin for better security
+    // origin: "https://mahajang214.github.io/", // change 'true' to specific origin for better security
+    origin: function(origin, callback) {
+      // allow requests with no origin (like Postman or curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) === -1) {
+        return callback(new Error('Not allowed by CORS'), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
