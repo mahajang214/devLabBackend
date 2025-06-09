@@ -29,7 +29,7 @@ const server = http.createServer(web);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://mahajang214.github.io/devLab/", // allow frontend to connect (change '*' to specific domain in prod)
+    origin: "https://mahajang214.github.io/", // allow frontend to connect (change '*' to specific domain in prod)
     methods: ['GET', 'POST',
       'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     // credentials: true, // allow cookies to be sent
@@ -117,7 +117,7 @@ web.use(express.urlencoded({ extended: true }));
 // 3. CORS - you can customize origin as needed
 web.use(
   cors({
-    origin: "https://mahajang214.github.io/devLab/", // change 'true' to specific origin for better security
+    origin: "https://mahajang214.github.io/", // change 'true' to specific origin for better security
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
