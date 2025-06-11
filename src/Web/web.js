@@ -163,6 +163,7 @@ web.use("/auth", authRoutes);
 web.use("/main", mainRoutes);
 web.use("/chat", chatRoutes);
 web.use("/code", codeRoutes);
+web.use("/ai",aiRoutes)
 
 // web.get("/", (req, res) => {
 //   logger.info("Hello route was called");
