@@ -115,7 +115,6 @@ web.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   'http://localhost:5173',
   'https://mahajang214.github.io/devLab',
-  'https://mahajang214.github.io'
    // add your GitHub Pages URL if used
 ];
 
